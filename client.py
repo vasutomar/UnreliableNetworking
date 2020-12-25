@@ -5,7 +5,6 @@ from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto import Random
 
-#find out what these do
 def pad(s):
     #return s + (16 - len(s) % 16) * chr(16 - len(s) % 16)
     return s + (16 - len(s) % 16) * bytes([(16 - len(s) % 16)])
@@ -84,19 +83,19 @@ while True:
 
         else:
             data, user = sock.recvfrom(1024)
-            print('Received from handshake :', data)
+            #print('Received from handshake :', data)
             if status == "Handshaking":
                 data = rsaDecryptor.decrypt(data)
-                print('decrypted data : ',data)
+                #print('decrypted data : ',data)
                 if data[0] == 0:
                     packetLength = data[1]
                     sessionKey = data[2:2+packetLength]
-                    print("sessionKey =", sessionKey, packetLength)
-
+                    print("sessionKey for data encryption = ", sessionKey)
+ 
                     # ACK segment 00
                     packet = toByte(1) + toByte(0) 
                     packet = pad(packet)
-                    print(packet)
+                    #print(packet)
                     AEScipher = AES.new(sessionKey, AES.MODE_ECB)
                     packet = AEScipher.encrypt(packet)
                     unreliableSend(packet, sock, user, errRate)
@@ -112,6 +111,7 @@ while True:
                 data = unpad(data)
                 packetType = data[0]
                 if packetType == 2:
+                    
                     packetLenght = data[1]
                     sequenceNumber = data[2]
 
@@ -120,13 +120,14 @@ while True:
                     packet = AEScipher.encrypt(packet)
                     unreliableSend(packet, sock, user, errRate)
 
-                    if sequenceNumber == nextSeqNum: 
+                    if sequenceNumber == nextSeqNum:
+                        print('Received : ', sequenceNumber) 
                         payload = data[3:3+packetLenght].decode('utf-8')
                         print(sequenceNumber, payload[:-1])
                         nextSeqNum = (nextSeqNum + 1) % 256
                         
                     else:
-                        #print("Discarding packet", sequenceNumber, "expected", nextSeqNum)
+                        print("Discarding packet", sequenceNumber, "expected", nextSeqNum)
                         pass # if it is not expected discard the packet
 
                 elif packetType == 3:
